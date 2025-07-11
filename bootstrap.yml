@@ -1,0 +1,87 @@
+---
+- hosts: all
+  become: true
+
+  vars:
+    ansible_user_name: ansible
+    ansible_ssh_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIO58sriFxnqIIsQXqJRLlOVRVbAOZk85jA5EGHc7PKgs ansible"
+    ssh_hardening_enabled: false
+    ssh_port: 2221
+
+  tasks:
+    - name: Create Ansible User
+      user:
+        name: "{{ ansible_user_name }}"
+        groups: sudo
+        create_home: yes
+
+    - name: Add SSH Key for ansible
+      ansible.posix.authorized_key:
+        user: "{{ ansible_user_name }}"
+        key: "{{ ansible_ssh_key }}"
+
+    - name: Add sudoers file for ansible
+      copy:
+        src: sudoers_ansible
+        dest: /etc/sudoers.d/{{ ansible_user_name }}
+        owner: root
+        group: root
+        mode: 0440
+        validate: 'visudo -cf %s'
+
+    # === SSH Hardening Section (only runs if enabled) ===
+
+    - name: Allow new SSH port through UFW
+      ufw:
+        rule: allow
+        port: "{{ ssh_port }}"
+        proto: tcp
+      when: ssh_hardening_enabled
+
+    - name: Ensure SSH port is updated
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?Port '
+        line: "Port {{ ssh_port }}"
+      when: ssh_hardening_enabled
+
+    - name: Disable password authentication
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PasswordAuthentication '
+        line: 'PasswordAuthentication no'
+      when: ssh_hardening_enabled
+
+    - name: Disable root login
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PermitRootLogin '
+        line: 'PermitRootLogin no'
+      when: ssh_hardening_enabled
+
+    - name: Allow only the ansible user
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?AllowUsers '
+        line: "AllowUsers {{ ansible_user_name }}"
+      when: ssh_hardening_enabled
+
+    - name: Disable socket-activated ssh.socket (Ubuntu 24+)
+      systemd:
+        name: ssh.socket
+        enabled: no
+        state: stopped
+      when: ssh_hardening_enabled
+
+    - name: Enable and start ssh service
+      systemd:
+        name: ssh
+        enabled: yes
+        state: started
+      when: ssh_hardening_enabled
+
+    - name: Restart SSH service
+      service:
+        name: ssh
+        state: restarted
+      when: ssh_hardening_enabled
