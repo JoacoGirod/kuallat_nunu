@@ -5,7 +5,7 @@ Include /etc/ssh/sshd_config.d/*.conf
 Port {{ ssh_port }}
 PermitRootLogin no
 PasswordAuthentication no
-AllowUsers {{ ansible_user_name }}
+AllowUsers {{ ssh_allowed_users | join(' ') }}
 
 # Don't allow password authentication
 PasswordAuthentication no

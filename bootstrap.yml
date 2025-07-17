@@ -1,11 +1,21 @@
 ---
-- hosts: all
+- name: User configuration for automation
+  hosts: all
   become: true
 
   vars:
     ansible_user_name: ansible
     ansible_ssh_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIO58sriFxnqIIsQXqJRLlOVRVbAOZk85jA5EGHc7PKgs ansible"
+
+    github_user_name: github
+    github_ssh_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC1iCVOD5JmnKCE7bX28d+PGOgWmemgLRLPjARW1KZSB GitHub Actions deploy key"
+
+    ssh_allowed_users:
+      - ansible
+      - github
+
     ssh_port: 2221
+
 
   roles:
     - role: bootstrap

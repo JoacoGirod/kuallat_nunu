@@ -3,7 +3,7 @@
   ansible.builtin.user:
     name: "{{ ansible_user_name }}"
     groups: sudo
-    create_home: false
+    create_home: true
 
 - name: Add SSH Key for ansible
   ansible.posix.authorized_key:
@@ -21,19 +21,19 @@
 
 - name: Create github User
   ansible.builtin.user:
-    name: github
+    name: "{{ github_user_name }}"
     groups: sudo
     create_home: true
 
 - name: Add SSH Key for github
   ansible.posix.authorized_key:
-    user: github
-    key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC1iCVOD5JmnKCE7bX28d+PGOgWmemgLRLPjARW1KZSB GitHub Actions deploy key"
+    user: "{{ github_user_name }}"
+    key: "{{ github_ssh_key }}"
 
 - name: Add sudoers file for github
   ansible.builtin.copy:
     src: sudoers_github
-    dest: /etc/sudoers.d/github
+    dest: /etc/sudoers.d/{{ github_user_name }}
     owner: root
     group: root
     mode: '0440'
