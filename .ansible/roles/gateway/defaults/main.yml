@@ -1,0 +1,6 @@
+---
+geoip_country_blocklist:
+  - RU  # Russia
+  - CN  # China
+  - KP  # North Korea
+  - IR  # Iran

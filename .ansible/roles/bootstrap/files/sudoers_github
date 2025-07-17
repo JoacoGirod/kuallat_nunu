@@ -1,0 +1,1 @@
+github ALL=(ALL) NOPASSWD: /usr/local/bin/deploy-portal.sh

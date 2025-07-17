@@ -1,0 +1,22 @@
+# Ansible managed
+
+Include /etc/ssh/sshd_config.d/*.conf
+
+Port {{ ssh_port }}
+PermitRootLogin no
+PasswordAuthentication no
+AllowUsers {{ ansible_user_name }}
+
+# Don't allow password authentication
+PasswordAuthentication no
+ChallengeResponseAuthentication no
+
+# Allow public key authentication
+PubkeyAuthentication yes
+
+# Misc
+UsePAM yes
+X11Forwarding yes
+PrintMotd no
+AcceptEnv LANG LC_*
+Subsystem sftp /usr/lib/openssh/sftp-server

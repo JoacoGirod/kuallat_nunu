@@ -1,0 +1,117 @@
+---
+- name: Install prerequisites for OpenResty
+  become: true
+  ansible.builtin.package:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+    state: present
+
+- name: Import OpenResty GPG key
+  become: true
+  ansible.builtin.get_url:
+    url: https://openresty.org/package/pubkey.gpg
+    dest: /etc/apt/trusted.gpg.d/openresty.asc
+    mode: '0644'
+    force: true
+
+- name: Add OpenResty repository
+  become: true
+  ansible.builtin.apt_repository:
+    repo: "deb [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/openresty.asc] http://openresty.org/package/ubuntu {{ ansible_lsb.codename }} main"
+    state: present
+    update_cache: yes
+
+- name: Install OpenResty
+  become: true
+  ansible.builtin.package:
+    name: openresty
+    state: present
+
+- name: Configure OpenResty
+  become: true
+  ansible.builtin.template:
+    src: openresty.conf.j2
+    dest: /etc/openresty/openresty.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart OpenResty
+
+- name: Create include directory for server blocks
+  become: true
+  ansible.builtin.file:
+    path: /etc/openresty/conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+
+
+# === CrowdSec Installation ===
+- name: Add CrowdSec repository script
+  become: true
+  ansible.builtin.shell: "curl -s https://packagecloud.io/install/repositories/crowdsec/crowdsec/script.deb.sh | bash"
+  args:
+    creates: /etc/apt/sources.list.d/crowdsec_crowdsec.list
+
+- name: Install CrowdSec agent and OpenResty bouncer
+  become: true
+  ansible.builtin.package:
+    name:
+      - crowdsec
+      - crowdsec-openresty-bouncer
+    state: present
+    update_cache: yes
+
+- name: Configure CrowdSec log acquisition
+  become: true
+  ansible.builtin.template:
+    src: acquis.yaml.j2
+    dest: /etc/crowdsec/acquis.yaml
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart CrowdSec
+
+# === WAF Installation ===
+- name: Clone openresty-waf repository
+  become: true
+  ansible.builtin.git:
+    repo: 'https://github.com/p0pr0ck5/lua-resty-waf.git'
+    dest: /usr/local/share/lua-resty-waf
+    version: master
+    update: no
+  notify: Restart OpenResty
+
+# === GeoIP Installation ===
+- name: Install GeoIP C libraries
+  become: true
+  ansible.builtin.package:
+    name:
+      - libmaxminddb0
+      - libmaxminddb-dev
+    state: present
+
+    
+- name: Create GeoIP directory
+  become: true
+  ansible.builtin.file:
+    path: /usr/share/geoip
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Copy GeoLite2 database
+  become: true
+  ansible.builtin.copy:
+    src: GeoLite2-Country.mmdb
+    dest: /usr/share/geoip/GeoLite2-Country.mmdb
+    owner: root
+    group: root
+    mode: '0644'

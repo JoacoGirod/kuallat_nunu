@@ -1,0 +1,12 @@
+---
+- name: Restart OpenResty
+  become: true
+  ansible.builtin.service:
+    name: openresty
+    state: restarted
+
+- name: Restart CrowdSec
+  become: true
+  ansible.builtin.service:
+    name: crowdsec
+    state: restarted

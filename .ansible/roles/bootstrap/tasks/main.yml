@@ -1,0 +1,74 @@
+---
+- name: Create Ansible User
+  ansible.builtin.user:
+    name: "{{ ansible_user_name }}"
+    groups: sudo
+    create_home: yes
+
+- name: Add SSH Key for ansible
+  ansible.posix.authorized_key:
+    user: "{{ ansible_user_name }}"
+    key: "{{ ansible_ssh_key }}"
+
+- name: Add sudoers file for ansible
+  ansible.builtin.copy:
+    src: sudoers_ansible
+    dest: /etc/sudoers.d/{{ ansible_user_name }}
+    owner: root
+    group: root
+    mode: 0440
+    validate: 'visudo -cf %s'
+
+- name: Create github User
+  ansible.builtin.user:
+    name: github
+    groups: sudo
+    create_home: yes
+
+- name: Add SSH Key for github
+  ansible.posix.authorized_key:
+    user: github
+    key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC1iCVOD5JmnKCE7bX28d+PGOgWmemgLRLPjARW1KZSB GitHub Actions deploy key"
+
+- name: Add sudoers file for github
+  ansible.builtin.copy:
+    src: sudoers_github
+    dest: /etc/sudoers.d/github
+    owner: root
+    group: root
+    mode: 0440
+    validate: 'visudo -cf %s'
+
+# === SSH Hardening Section (only runs if enabled) ===
+
+- name: Allow new SSH port through UFW
+  community.general.ufw:
+    rule: allow
+    port: "{{ ssh_port }}"
+    proto: tcp
+  when: ssh_hardening_enabled
+
+- name: Harden SSH configuration
+  ansible.builtin.template:
+    src: sshd_config.j2
+    dest: /etc/ssh/sshd_config
+    owner: root
+    group: root
+    mode: '0600'
+    validate: 'sshd -t -f %s'
+  when: ssh_hardening_enabled
+  notify: Restart SSH
+
+- name: Disable socket-activated ssh.socket (Ubuntu 24+)
+  ansible.builtin.systemd:
+    name: ssh.socket
+    enabled: no
+    state: stopped
+  when: ssh_hardening_enabled
+
+- name: Enable and start ssh service
+  ansible.builtin.systemd:
+    name: ssh
+    enabled: yes
+    state: started
+  when: ssh_hardening_enabled

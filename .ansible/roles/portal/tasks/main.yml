@@ -1,0 +1,18 @@
+---
+- name: Create portal build directory
+  become: true
+  ansible.builtin.file:
+    path: /var/www/jgirod.com.ar/html
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: '0755'
+
+- name: Copy deploy-portal.sh script
+  become: true
+  ansible.builtin.copy:
+    src: deploy-portal.sh
+    dest: /usr/local/bin/deploy-portal.sh
+    owner: root
+    group: root
+    mode: '0755'

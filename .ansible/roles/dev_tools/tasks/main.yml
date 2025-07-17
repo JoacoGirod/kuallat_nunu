@@ -1,0 +1,16 @@
+---
+- name: Install development tools
+  become: true
+  ansible.builtin.package:
+    name:
+      - tmux
+      - net-tools
+      - htop
+    state: present
+
+- name: Configure tmux
+  become: true
+  ansible.builtin.template:
+    src: tmux.conf.j2
+    dest: /etc/tmux.conf
+    mode: '0644'
