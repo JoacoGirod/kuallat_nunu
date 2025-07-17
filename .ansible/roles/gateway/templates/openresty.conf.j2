@@ -87,7 +87,7 @@ http {
 
         -- Create a set of blocked countries for fast lookups
         local blocked_countries = {
-        {% for country in geoip_country_blocklist %}
+        {% for country in gateway_geoip_country_blocklist %}
             "{{ country }}",
         {% endfor %}
         }

@@ -1,2 +1,2 @@
 ---
-ssh_hardening_enabled: false
+bootstrap_ssh_hardening_enabled: false

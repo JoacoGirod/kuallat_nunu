@@ -34,7 +34,7 @@
       - docker-buildx-plugin
       - docker-compose-plugin
     state: present
-    update_cache: yes
+    update_cache: true
 
 - name: Install git
   become: true

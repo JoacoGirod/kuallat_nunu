@@ -3,7 +3,7 @@
   ansible.builtin.user:
     name: "{{ ansible_user_name }}"
     groups: sudo
-    create_home: yes
+    create_home: false
 
 - name: Add SSH Key for ansible
   ansible.posix.authorized_key:
@@ -16,14 +16,14 @@
     dest: /etc/sudoers.d/{{ ansible_user_name }}
     owner: root
     group: root
-    mode: 0440
+    mode: '0440'
     validate: 'visudo -cf %s'
 
 - name: Create github User
   ansible.builtin.user:
     name: github
     groups: sudo
-    create_home: yes
+    create_home: true
 
 - name: Add SSH Key for github
   ansible.posix.authorized_key:
@@ -36,7 +36,7 @@
     dest: /etc/sudoers.d/github
     owner: root
     group: root
-    mode: 0440
+    mode: '0440'
     validate: 'visudo -cf %s'
 
 # === SSH Hardening Section (only runs if enabled) ===
@@ -46,7 +46,7 @@
     rule: allow
     port: "{{ ssh_port }}"
     proto: tcp
-  when: ssh_hardening_enabled
+  when: bootstrap_ssh_hardening_enabled
 
 - name: Harden SSH configuration
   ansible.builtin.template:
@@ -56,19 +56,19 @@
     group: root
     mode: '0600'
     validate: 'sshd -t -f %s'
-  when: ssh_hardening_enabled
+  when: bootstrap_ssh_hardening_enabled
   notify: Restart SSH
 
 - name: Disable socket-activated ssh.socket (Ubuntu 24+)
   ansible.builtin.systemd:
     name: ssh.socket
-    enabled: no
+    enabled: false
     state: stopped
-  when: ssh_hardening_enabled
+  when: bootstrap_ssh_hardening_enabled
 
 - name: Enable and start ssh service
   ansible.builtin.systemd:
     name: ssh
-    enabled: yes
+    enabled: true
     state: started
-  when: ssh_hardening_enabled
+  when: bootstrap_ssh_hardening_enabled
