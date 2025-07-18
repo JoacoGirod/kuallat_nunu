@@ -59,3 +59,13 @@
     owner: root
     group: root
     mode: '0755'
+
+- name: Add Certbot server block to OpenResty configuration
+  become: true
+  ansible.builtin.template:
+    src: certbot.conf.j2
+    dest: /etc/openresty/conf.d/certbot.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart OpenResty

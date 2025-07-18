@@ -17,7 +17,7 @@
     group: root
     mode: '0755'
 
-- name: Configure OpenResty for the portal
+- name: Add Portal server block to OpenResty configuration
   become: true
   ansible.builtin.template:
     src: portal.conf.j2

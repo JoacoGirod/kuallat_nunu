@@ -2,6 +2,19 @@ server {
     listen 80;
     listen [::]:80;
     server_name jgirod.com.ar;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name jgirod.com.ar;
+
+    ssl_certificate /etc/letsencrypt/live/jgirod.com.ar/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/jgirod.com.ar/privkey.pem;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
 
     root /var/www/jgirod.com.ar/html;
     index index.html;

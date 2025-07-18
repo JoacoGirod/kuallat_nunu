@@ -1,9 +1,9 @@
 server {
     listen 80;
-    server_name {{ cert_item.domains | join(' ') }};
+    server_name {{ certbot_certs | map(attribute='domains') | flatten | join(' ') }};
 
     location /.well-known/acme-challenge/ {
-        root {{ cert_item.webroot | default(certbot_webroot) }};
+        root {{ certbot_webroot }};
         default_type "text/plain";
     }
 

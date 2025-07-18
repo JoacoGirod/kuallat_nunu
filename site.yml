@@ -2,8 +2,17 @@
 - name: Provision Homeserver
   hosts: all
   become: true
+  vars:
+    certbot_create_if_missing: true
+    certbot_create_method: webroot
+    certbot_certs:
+      - email: joaquingirod@gmail.com
+        domains:
+          - jgirod.com.ar
+        webroot: /var/www/letsencrypt
   roles:
     - role: dev_tools
     - role: infra_tools
     - role: gateway
+    - role: geerlingguy.certbot
     - role: portal
