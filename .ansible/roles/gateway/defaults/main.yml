@@ -4,3 +4,11 @@ gateway_geoip_country_blocklist:
   - CN  # China
   - KP  # North Korea
   - IR  # Iran
+
+certbot_webroot: /var/www/letsencrypt
+
+certbot_create_method: webroot
+
+certbot_certs:
+  - domains:
+      - jgirod.com.ar

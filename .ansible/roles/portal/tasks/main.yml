@@ -16,3 +16,13 @@
     owner: root
     group: root
     mode: '0755'
+
+- name: Configure OpenResty for the portal
+  become: true
+  ansible.builtin.template:
+    src: portal.conf.j2
+    dest: /etc/openresty/conf.d/portal.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart OpenResty

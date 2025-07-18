@@ -1,0 +1,6 @@
+---
+- name: Restart OpenResty
+  become: true
+  ansible.builtin.service:
+    name: openresty
+    state: restarted

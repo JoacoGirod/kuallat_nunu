@@ -1,0 +1,13 @@
+server {
+    listen 80;
+    server_name {{ cert_item.domains | join(' ') }};
+
+    location /.well-known/acme-challenge/ {
+        root {{ cert_item.webroot | default(certbot_webroot) }};
+        default_type "text/plain";
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
