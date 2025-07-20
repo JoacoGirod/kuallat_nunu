@@ -6,8 +6,4 @@ server {
         root {{ certbot_webroot }};
         default_type "text/plain";
     }
-
-    location / {
-        return 301 https://$host$request_uri;
-    }
 }

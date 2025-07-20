@@ -4,8 +4,8 @@
   become: true
   vars:
     certbot_create_if_missing: true
+    certbot_testmode: false
     certbot_create_method: webroot
-    certbot_webroot: /var/www/letsencrypt
     certbot_certs:
       - email: joaquingirod@gmail.com
         domains:
@@ -15,6 +15,6 @@
     - role: dev_tools
     - role: infra_tools
     - role: gateway
-    - role: test
-    # - role: geerlingguy.certbot
-    # - role: portal
+    # - role: test
+    - role: geerlingguy.certbot
+    - role: portal

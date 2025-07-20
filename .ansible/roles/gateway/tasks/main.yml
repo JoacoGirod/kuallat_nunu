@@ -8,8 +8,6 @@
       - curl
       - gnupg
       - lsb-release
-      - crowdsec
-      - gettext-base
     state: present
 
 - name: Import OpenResty GPG key
@@ -61,6 +59,15 @@
     mode: '0644'
   notify: Restart OpenResty
 
+- name: Ensure acme-challenge directory exists
+  become: true
+  ansible.builtin.file:
+    path: /var/www/letsencrypt/.well-known/acme-challenge
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
 - name: Add Certbot server block to OpenResty configuration
   become: true
   ansible.builtin.template:
@@ -71,18 +78,30 @@
     mode: '0644'
   notify: Restart OpenResty
 
-- name: Download CrowdSec repository setup script
+- name: Add CrowdSec GPG key
   become: true
-  ansible.builtin.get_url:
-    url: https://packagecloud.io/install/repositories/crowdsec/crowdsec/script.deb.sh?any=true
-    dest: /tmp/crowdsec-repo-setup.sh
-    mode: '0755'
+  ansible.builtin.apt_key:
+    url: https://packagecloud.io/crowdsec/crowdsec/gpgkey
+    state: present
 
-- name: Execute CrowdSec repository setup script
+- name: Add CrowdSec apt repository
   become: true
-  ansible.builtin.command:
-    cmd: /tmp/crowdsec-repo-setup.sh
-    creates: /etc/apt/sources.list.d/crowdsec_crowdsec.list
+  ansible.builtin.apt_repository:
+    repo: "deb https://packagecloud.io/crowdsec/crowdsec/ubuntu/ {{ ansible_lsb.codename }} main"
+    state: present
+    filename: crowdsec
+
+- name: Update apt cache
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install latest CrowdSec from official repo
+  become: true
+  ansible.builtin.package:
+    name: crowdsec
+    state: present
 
 - name: Install CrowdSec OpenResty bouncer
   become: true
@@ -90,3 +109,73 @@
     name: crowdsec-openresty-bouncer
     state: present
   notify: Restart OpenResty
+
+- name: Set cscli hub_branch to master
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/crowdsec/config.yaml
+    regexp: '^(\s*)hub_branch:'
+    line: '  hub_branch: master'
+    insertafter: '^cscli:'
+
+- name: Update CrowdSec hub catalog
+  become: true
+  ansible.builtin.command: cscli hub update
+  register: cscli_hub_update
+  changed_when: "'updated' in cscli_hub_update.stdout"
+
+- name: Get installed collections
+  become: true
+  ansible.builtin.command: cscli collections list -o raw
+  register: installed_collections
+  changed_when: false
+
+- name: Install AppSec collections if missing
+  become: true
+  ansible.builtin.command: >
+    cscli collections install crowdsecurity/appsec-virtual-patching crowdsecurity/appsec-generic-rules
+  when: >
+    "'crowdsecurity/appsec-virtual-patching' not in installed_collections.stdout or
+     'crowdsecurity/appsec-generic-rules' not in installed_collections.stdout"
+  register: install_appsec
+  changed_when: "'installed' in install_appsec.stdout or 'updated' in install_appsec.stdout"
+
+- name: Ensure acquisition directory for AppSec exists
+  become: true
+  ansible.builtin.file:
+    path: /etc/crowdsec/acquis.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Create AppSec acquisition config
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/crowdsec/acquis.d/appsec.yaml
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      appsec_config: crowdsecurity/appsec-default
+      labels:
+        type: appsec
+      listen_addr: 127.0.0.1:7422
+      source: appsec
+  notify: Restart CrowdSec
+
+- name: Ensure APPSEC_URL is present in bouncer config
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/crowdsec/bouncers/crowdsec-openresty-bouncer.conf
+    regexp: '^APPSEC_URL='
+    line: 'APPSEC_URL=http://127.0.0.1:7422'
+    create: false
+    backrefs: true
+  notify: Restart OpenResty
+
+- name: Restart Openresty (in case notifier was not procd)
+  become: true
+  ansible.builtin.service:
+    name: openresty
+    state: restarted

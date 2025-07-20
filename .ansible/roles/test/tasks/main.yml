@@ -1,5 +1,5 @@
 ---
-- name: Create portal build directory
+- name: Create Test build directory
   become: true
   ansible.builtin.file:
     path: /var/www/test/html
@@ -8,7 +8,7 @@
     group: www-data
     mode: '0755'
 
-- name: Add Portal server block to OpenResty configuration
+- name: Add Test server block to OpenResty configuration
   become: true
   ansible.builtin.template:
     src: test.conf.j2
