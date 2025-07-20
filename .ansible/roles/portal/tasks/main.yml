@@ -21,7 +21,7 @@
   become: true
   ansible.builtin.template:
     src: portal.conf.j2
-    dest: /etc/openresty/conf.d/portal.conf
+    dest: /usr/local/openresty/nginx/conf/conf.d/portal.conf
     owner: root
     group: root
     mode: '0644'

@@ -8,6 +8,8 @@
       - curl
       - gnupg
       - lsb-release
+      - crowdsec
+      - gettext-base
     state: present
 
 - name: Import OpenResty GPG key
@@ -40,6 +42,14 @@
     group: root
     mode: '0755'
 
+- name: Create conf.d directory
+  become: true
+  ansible.builtin.file:
+    path: /usr/local/openresty/nginx/conf/conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
 
 - name: Template nginx.conf (global OpenResty config)
   become: true
@@ -51,21 +61,32 @@
     mode: '0644'
   notify: Restart OpenResty
 
-- name: Create conf.d directory
-  become: true
-  ansible.builtin.file:
-    path: /etc/openresty/conf.d
-    state: directory
-    owner: root
-    group: root
-    mode: '0755'
-
 - name: Add Certbot server block to OpenResty configuration
   become: true
   ansible.builtin.template:
     src: certbot.conf.j2
-    dest: /etc/openresty/conf.d/certbot.conf
+    dest: /usr/local/openresty/nginx/conf/conf.d/certbot.conf
     owner: root
     group: root
     mode: '0644'
+  notify: Restart OpenResty
+
+- name: Download CrowdSec repository setup script
+  become: true
+  ansible.builtin.get_url:
+    url: https://packagecloud.io/install/repositories/crowdsec/crowdsec/script.deb.sh?any=true
+    dest: /tmp/crowdsec-repo-setup.sh
+    mode: '0755'
+
+- name: Execute CrowdSec repository setup script
+  become: true
+  ansible.builtin.command:
+    cmd: /tmp/crowdsec-repo-setup.sh
+    creates: /etc/apt/sources.list.d/crowdsec_crowdsec.list
+
+- name: Install CrowdSec OpenResty bouncer
+  become: true
+  ansible.builtin.package:
+    name: crowdsec-openresty-bouncer
+    state: present
   notify: Restart OpenResty

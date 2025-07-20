@@ -1,0 +1,29 @@
+---
+- name: Create portal build directory
+  become: true
+  ansible.builtin.file:
+    path: /var/www/test/html
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: '0755'
+
+- name: Add Portal server block to OpenResty configuration
+  become: true
+  ansible.builtin.template:
+    src: test.conf.j2
+    dest: /usr/local/openresty/nginx/conf/conf.d/test.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart OpenResty
+
+- name: Add Test File
+  become: true
+  ansible.builtin.copy:
+    src: index.html
+    dest: /var/www/test/html
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart OpenResty
