@@ -1,9 +1,15 @@
 server {
     listen 80;
+    listen [::]:80;
     server_name {{ certbot_certs | map(attribute='domains') | flatten | join(' ') }};
 
     location /.well-known/acme-challenge/ {
-        root {{ certbot_webroot }};
+        allow all;
         default_type "text/plain";
+        root {{ certbot_webroot }};
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
     }
 }

@@ -1,0 +1,109 @@
+lua_package_path '$prefix/../lualib/plugins/crowdsec/?.lua;;';
+lua_shared_dict crowdsec_cache 50m;
+lua_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+
+init_by_lua_block {
+    cs = require "crowdsec"
+    local ok, err = cs.init("/etc/crowdsec/bouncers/crowdsec-openresty-bouncer.conf", "crowdsec-openresty-bouncer/v1.1.1")
+    if ok == nil then
+        ngx.log(ngx.ERR, "[Crowdsec] " .. err)
+        error()
+    end
+    if ok == "Disabled" then
+        ngx.log(ngx.ALERT, "[Crowdsec] Bouncer Disabled")
+    else
+        ngx.log(ngx.ALERT, "[Crowdsec] Initialisation done")
+    end
+
+    -- Initialize MaxMind DB globally
+    geo = require "resty.maxminddb"
+    if not geo.initted() then
+        local ok, err = geo.init("/usr/local/share/GeoIP/GeoLite2-Country.mmdb")
+        if not ok then
+            ngx.log(ngx.ERR, "Failed to initialize MaxMind DB: ", err or "unknown error")
+        else
+            ngx.log(ngx.NOTICE, "MaxMind DB initialized successfully")
+        end
+    end
+}
+
+map $server_addr $unix {
+    default       0;
+    "~unix:"      1;
+}
+
+init_worker_by_lua_block {
+    -- CrowdSec setup
+    local cs = require "crowdsec"
+    local mode = cs.get_mode()
+    if string.lower(mode) == "stream" then
+        ngx.log(ngx.INFO, "Initializing stream mode for worker " .. tostring(ngx.worker.id()))
+        cs.SetupStream()
+    end
+
+    if ngx.worker.id() == 0 then
+        ngx.log(ngx.INFO, "Initializing metrics for worker " .. tostring(ngx.worker.id()))
+        cs.SetupMetrics()
+    end
+}
+
+access_by_lua_block {
+    -- GeoIP country check
+    local remote_addr = ngx.var.remote_addr
+
+    -- Check if geo is initialized
+    if not geo.initted() then
+        ngx.log(ngx.ERR, "GeoIP database not initialized")
+        return ngx.exit(ngx.HTTP_FORBIDDEN)
+    end
+
+    local res, err = geo.lookup(remote_addr)
+
+    if not res then
+        ngx.log(ngx.ERR, "GeoIP lookup failed for IP: ", remote_addr, " Error: ", err or "unknown")
+        return ngx.exit(ngx.HTTP_FORBIDDEN)
+    end
+
+    -- Extract country code
+    local country_code = res.country and res.country.iso_code or nil
+    if not country_code then
+        ngx.log(ngx.ERR, "No country code found for IP: ", remote_addr)
+        return ngx.exit(ngx.HTTP_FORBIDDEN)
+    end
+
+    local allowed_countries = {
+        AR = true, -- Argentina
+        BR = true, -- Brazil
+        CL = true, -- Chile
+        CO = true, -- Colombia
+        EC = true, -- Ecuador
+        PY = true, -- Paraguay
+        PE = true, -- Peru
+        UY = true, -- Uruguay
+        VE = true, -- Venezuela
+        BO = true, -- Bolivia
+        US = true, -- United States
+        DE = true, -- Germany (common LE location)
+        SG = true, -- Singapore (common LE location)
+    }
+
+    if not allowed_countries[country_code] then
+        ngx.log(ngx.WARN, "Blocked non-South America IP: ", remote_addr, " (", country_code, ")")
+        return ngx.exit(ngx.HTTP_FORBIDDEN)
+    end
+
+    ngx.log(ngx.INFO, "Allowed IP from country: ", remote_addr, " (", country_code, ")")
+
+    -- Crowdsec
+    local cs = require "crowdsec"
+
+    if ngx.var.unix == "1" then
+        ngx.log(ngx.DEBUG, "[Crowdsec] Unix socket request ignoring...")
+    else
+        -- CrowdSec decision
+        local crowdsec_allowed = cs.Allow(ngx.var.remote_addr)
+        if not crowdsec_allowed then
+            return ngx.exit(ngx.HTTP_FORBIDDEN)
+        end
+    end
+}
