@@ -10,6 +10,7 @@
       - email: joaquingirod@gmail.com
         domains:
           - jgirod.com.ar
+          - neibo.jgirod.com.ar
         webroot: /var/www/letsencrypt
   roles:
     - role: dev_tools
@@ -18,3 +19,4 @@
     # - role: test
     - role: geerlingguy.certbot
     - role: portal
+    - role: neibo

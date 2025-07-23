@@ -1,0 +1,32 @@
+---
+# These tasks dont handle updating, that would be better managed by a
+# github hook that pushed into the server like Portal does
+- name: Clone repository
+  ansible.builtin.git:
+    repo: "https://github.com/cijjas/Neibo"
+    dest: "/opt/neibo"
+    version: "upgraded-docker"
+    force: true
+    update: true
+    clone: true
+
+- name: Run docker compose
+  community.docker.docker_compose_v2:
+    project_src: "/opt/neibo"
+    state: present
+
+- name: Add Neibo server block to OpenResty configuration
+  become: true
+  ansible.builtin.template:
+    src: neibo.conf.j2
+    dest: /usr/local/openresty/nginx/conf/conf.d/neibo.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart OpenResty
+
+- name: Allow HTTPS (port 443)
+  community.general.ufw:
+    rule: allow
+    port: 443
+    proto: tcp

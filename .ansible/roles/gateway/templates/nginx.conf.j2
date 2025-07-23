@@ -53,7 +53,7 @@ http {
     add_header X-Content-Type-Options nosniff;
     add_header X-XSS-Protection "1; mode=block";
     add_header Referrer-Policy "strict-origin-when-cross-origin";
-    add_header Content-Security-Policy "default-src 'self'";
+    # add_header Content-Security-Policy "default-src 'self'"; This produces conflicts with Neibo which uses inline css:(
 
     # Hide server information
     server_tokens off;

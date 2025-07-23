@@ -1,5 +1,5 @@
 ---
-- name: Install prerequisites for Docker
+- name: Install basic system packages
   become: true
   ansible.builtin.package:
     name:
@@ -8,6 +8,16 @@
       - curl
       - gnupg
       - lsb-release
+      - python3
+      - python3-pip
+      - python3-setuptools
+    state: present
+    update_cache: true
+
+- name: Install git
+  become: true
+  ansible.builtin.package:
+    name: git
     state: present
 
 - name: Add Docker GPG key
@@ -36,8 +46,17 @@
     state: present
     update_cache: true
 
-- name: Install git
+- name: Install Python Docker SDK via system packages
   become: true
   ansible.builtin.package:
-    name: git
+    name:
+      - python3-docker
+      - python3-dockerpty
     state: present
+
+- name: Ensure Docker service is started and enabled
+  become: true
+  ansible.builtin.systemd:
+    name: docker
+    state: started
+    enabled: true

@@ -7,9 +7,6 @@ server {
     ssl_certificate /etc/letsencrypt/live/jgirod.com.ar/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/jgirod.com.ar/privkey.pem;
 
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
-
     root /var/www/jgirod.com.ar/html;
     index index.html;
 
