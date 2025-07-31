@@ -10,6 +10,7 @@ Restart=always
 RestartSec=3
 Environment="OLLAMA_HOST=0.0.0.0:{{ qwen_model_port }}"
 Environment="OLLAMA_MODELS=/usr/share/ollama/.ollama/models"
+Environment="HSA_OVERRIDE_GFX_VERSION=9.0.0"
 
 [Install]
 WantedBy=multi-user.target
