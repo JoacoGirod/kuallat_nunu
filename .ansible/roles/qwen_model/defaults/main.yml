@@ -1,0 +1,11 @@
+---
+# defaults file for qwen_model
+
+# The port the Qwen model will listen on
+qwen_model_port: 11434
+
+# The internal network subnet allowed to access the model
+internal_network_subnet: 192.168.0.0/16
+
+# The Qwen model to deploy
+qwen_model_name: "qwen2:7b"

@@ -1,0 +1,15 @@
+[Unit]
+Description=Ollama API Service
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/ollama serve
+User=root
+Group=root
+Restart=always
+RestartSec=3
+Environment="OLLAMA_HOST=0.0.0.0:{{ qwen_model_port }}"
+Environment="OLLAMA_MODELS=/usr/share/ollama/.ollama/models"
+
+[Install]
+WantedBy=multi-user.target

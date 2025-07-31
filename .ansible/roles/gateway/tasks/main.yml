@@ -230,8 +230,8 @@
     state: absent
   notify: Restart OpenResty
 
-- name: Restart Openresty (in case notifier was not procd)
-  become: true
-  ansible.builtin.service:
-    name: openresty
-    state: restarted
+# - name: Restart Openresty (in case notifier was not procd)
+#   become: true
+#   ansible.builtin.service:
+#     name: openresty
+#     state: restarted

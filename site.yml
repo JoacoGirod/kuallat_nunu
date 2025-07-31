@@ -16,6 +16,7 @@
     - role: dev_tools
     - role: infra_tools
     - role: gateway
+    - role: qwen_model
     # - role: test
     - role: geerlingguy.certbot
     - role: portal

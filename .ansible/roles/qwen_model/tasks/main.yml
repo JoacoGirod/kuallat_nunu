@@ -1,0 +1,44 @@
+---
+- name: Install Ollama
+  ansible.builtin.shell: "curl -fsSL https://ollama.com/install.sh | sh"
+  changed_when: true
+
+- name: Create systemd override directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/ollama.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Create systemd override file for Ollama service
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/ollama.service.d/override.conf
+    content: |
+      [Service]
+      Environment="HSA_OVERRIDE_GFX_VERSION=9.0.0"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart ollama
+
+- name: Ensure Ollama service is started and enabled
+  ansible.builtin.systemd:
+    name: ollama
+    state: started
+    enabled: true
+    daemon_reload: true
+
+- name: Pull the Qwen model
+  ansible.builtin.command: "ollama pull {{ qwen_model_name }}"
+  args:
+    creates: /usr/share/ollama/.ollama/models/manifests/registry.ollama.ai/library/{{ qwen_model_name | replace(':', '/') }}
+  changed_when: true # Always report as changed as the pull command can update the model
+
+- name: Allow traffic to Qwen model with ufw
+  community.general.ufw:
+    rule: allow
+    from: "{{ internal_network_subnet }}"
+    to_port: "{{ qwen_model_port }}"
+    proto: tcp
+  notify: reload ufw

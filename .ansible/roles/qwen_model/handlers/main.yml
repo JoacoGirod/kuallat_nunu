@@ -1,0 +1,11 @@
+---
+# handlers file for qwen_model
+- name: restart ollama
+  ansible.builtin.systemd:
+    name: ollama
+    state: restarted
+    daemon_reload: true
+
+- name: reload ufw
+  community.general.ufw:
+    state: reloaded
