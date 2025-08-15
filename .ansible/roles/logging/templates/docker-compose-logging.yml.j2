@@ -1,0 +1,45 @@
+services:
+  loki:
+    image: grafana/loki:2.9.2
+    container_name: loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - /opt/logging/loki:/etc/loki
+      - loki_data:/loki
+    command: -config.file=/etc/loki/loki-config.yml
+    user: root
+    restart: unless-stopped
+    networks:
+      - logging_net
+
+  promtail:
+    image: grafana/promtail:2.9.2
+    container_name: promtail
+    volumes:
+      - /opt/logging/promtail:/etc/promtail
+      - /usr/local/openresty/nginx/logs:/usr/local/openresty/nginx/logs
+      - /var/log:/var/log
+    command: -config.file=/etc/promtail/promtail-config.yml
+    restart: unless-stopped
+    networks:
+      - logging_net
+
+  grafana:
+    image: grafana/grafana:12.1.1
+    container_name: grafana
+    ports:
+      - "{{ grafana_port }}:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    restart: unless-stopped
+    networks:
+      - logging_net
+
+volumes:
+  loki_data:
+  grafana_data:
+
+networks:
+  logging_net:
+

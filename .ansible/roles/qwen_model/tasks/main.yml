@@ -1,7 +1,13 @@
 ---
+- name: Check if Ollama is already installed
+  ansible.builtin.stat:
+    path: /usr/local/bin/ollama
+  register: ollama_binary
+
 - name: Install Ollama
   ansible.builtin.shell: "curl -fsSL https://ollama.com/install.sh | sh"
-  changed_when: true
+  when: not ollama_binary.stat.exists
+  changed_when: ollama_binary.stat.exists == false # Only report change if it was actually installed
 
 - name: Deploy Ollama systemd service
   ansible.builtin.template:

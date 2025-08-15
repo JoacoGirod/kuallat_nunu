@@ -1,0 +1,80 @@
+---
+- name: Create logging directories
+  become: true
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - /opt/logging
+    - /opt/logging/loki
+    - /opt/logging/promtail
+
+- name: Install Docker Loki logging driver plugin
+  become: true
+  community.docker.docker_plugin:
+    plugin_name: grafana/loki-docker-driver:latest
+    state: present
+  register: loki_plugin_install
+
+- name: Enable Docker Loki logging driver plugin
+  become: true
+  community.docker.docker_plugin:
+    plugin_name: grafana/loki-docker-driver:latest
+    state: enable
+  register: loki_plugin_enable
+
+- name: Restart Docker daemon to load new plugin
+  become: true
+  ansible.builtin.systemd:
+    name: docker
+    state: restarted
+    daemon_reload: true
+  when: loki_plugin_install.changed or loki_plugin_enable.changed
+
+- name: Wait for Docker daemon to be fully ready
+  ansible.builtin.pause:
+    seconds: 5
+
+- name: Template Loki configuration
+  become: true
+  ansible.builtin.template:
+    src: loki-config.yml.j2
+    dest: /opt/logging/loki/loki-config.yml
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Template Promtail configuration
+  become: true
+  ansible.builtin.template:
+    src: promtail-config.yml.j2
+    dest: /opt/logging/promtail/promtail-config.yml
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Template logging docker compose file
+  become: true
+  ansible.builtin.template:
+    src: docker-compose-logging.yml.j2
+    dest: /opt/logging/docker-compose.yml
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Run logging docker compose stack
+  become: true
+  community.docker.docker_compose_v2:
+    project_name: logging
+    project_src: /opt/logging
+    state: present
+
+- name: Allow Grafana port
+  become: true
+  community.general.ufw:
+    rule: allow
+    port: "{{ grafana_port }}"
+    proto: tcp

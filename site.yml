@@ -15,6 +15,7 @@
   roles:
     - role: dev_tools
     - role: infra_tools
+    - role: logging
     - role: gateway
     - role: qwen_model
     # - role: test
